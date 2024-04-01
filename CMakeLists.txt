@@ -6,7 +6,7 @@ include(ExternalProject)
 
 option(WHISPERCPP_WITH_CUDA "Build Whisper with CUDA support" OFF)
 
-set(CMAKE_OSX_ARCHITECTURES_ "arm64$<SEMICOLON>x86_64")
+set(CMAKE_OSX_ARCHITECTURES_ "$ENV{MACOS_ARCH}")
 
 set(Whispercpp_Build_GIT_TAG "f22d27a385d34b1e544031efe8aa2e3d73922791")
 
@@ -27,7 +27,6 @@ if(APPLE)
   if(NOT DEFINED ENV{MACOS_ARCH})
     message(FATAL_ERROR "The MACOS_ARCH environment variable is not set. Please set it to either `x86` or `arm64`")
   endif(NOT DEFINED ENV{MACOS_ARCH})
-  set(CMAKE_OSX_ARCHITECTURES_ "$ENV{MACOS_ARCH}")
   if($ENV{MACOS_ARCH} STREQUAL "x86_64")
     set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_METAL=OFF -DWHISPER_COREML=OFF -DWHISPER_NO_AVX=OFF
                                       -DWHISPER_NO_AVX2=OFF -DWHISPER_NO_F16C=OFF)
@@ -148,5 +147,7 @@ if(WIN32)
     install(FILES ${CUBLAS_DLLS} ${CUBLASLT_DLLS} ${CUDART_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
   endif(NOT WHISPERCPP_WITH_CUDA)
 else()
-
+  # copy lib/ include/ and bin/ from ${INSTALL_DIR} to the release directory in the root of the project
+  install(DIRECTORY ${INSTALL_DIR}/lib DESTINATION ${CMAKE_SOURCE_DIR}/release)
+  install(DIRECTORY ${INSTALL_DIR}/include DESTINATION ${CMAKE_SOURCE_DIR}/release)
 endif(WIN32)
