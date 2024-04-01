@@ -122,7 +122,9 @@ jobs:
           "CUDA_TOOLKIT_ROOT_DIR=$env:CUDA_PATH" >> $env:GITHUB_ENV
 
       - name: "Run Build-Windows.ps1"
-        run: "./Build-Windows.ps1"
+        run: "./Build-Windows.ps1 -Version ${{ steps.get-version.outputs.version }}"
+        env:
+          CPU_OR_CUDA: ${{ matrix.cublas }}
 
       - uses: "actions/upload-artifact@v4"
         with:
