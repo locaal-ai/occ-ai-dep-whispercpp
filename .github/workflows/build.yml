@@ -1,0 +1,166 @@
+name: "Build"
+
+on:
+  push:
+    branches:
+      - "main"
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - "main"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: "${{ github.ref != 'refs/heads/main' }}"
+
+jobs:
+  BuildMac:
+    runs-on: "macos-13"
+
+    strategy:
+      matrix:
+        config:
+          - "Release"
+
+    defaults:
+      run:
+        shell: "bash"
+
+    steps:
+      - name: "Get version"
+        run: |
+          if [[ $GITHUB_REF =~ ^refs/tags/ ]]
+          then version="${GITHUB_REF#refs/tags/}"
+          else version=main
+          fi
+          printf "version=%s" "$version" > "$GITHUB_OUTPUT"
+        id: "get-version"
+
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "Run build-macos.sh"
+        run: "./build-macos.sh ${{ matrix.config }} ${{ steps.get-version.outputs.version }}"
+
+      - name: "Upload artifact"
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: "opencv-macos-${{ matrix.config }}"
+          path: "release/*.tar.gz"
+
+  BuildLinux:
+    runs-on: "ubuntu-22.04"
+
+    strategy:
+      matrix:
+        config:
+          - "Release"
+
+    defaults:
+      run:
+        shell: "bash"
+
+    steps:
+      - name: "Get version"
+        run: |
+          if [[ $GITHUB_REF =~ ^refs/tags/ ]]
+          then version="${GITHUB_REF#refs/tags/}"
+          else version=main
+          fi
+          printf "version=%s" "$version" > "$GITHUB_OUTPUT"
+        id: "get-version"
+
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "Run build-linux.sh"
+        run: "./build-linux.sh ${{ matrix.config }} ${{ steps.get-version.outputs.version }}"
+
+      - uses: "actions/upload-artifact@v4"
+        with:
+          name: "opencv-linux-${{ matrix.config }}"
+          path: "release/*.tar.gz"
+
+  BuildWindows:
+    runs-on: "windows-2022"
+
+    strategy:
+      matrix:
+        config:
+          - "Release"
+        cublas: [cpu, 12.2.0, 11.8.0]
+
+    steps:
+      - name: "Get version"
+        shell: bash
+        run: |
+          if [[ $GITHUB_REF =~ ^refs/tags/ ]]
+          then version="${GITHUB_REF#refs/tags/}"
+          else version=main
+          fi
+          printf "version=%s" "$version" > "$GITHUB_OUTPUT"
+        id: "get-version"
+
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: Install CUDA Toolkit
+        if: ${{ matrix.cublas != 'cpu' }}
+        id: cuda-toolkit
+        uses: Jimver/cuda-toolkit@v0.2.11
+        with:
+          cuda: '${{ matrix.cublas }}'
+
+      - name: Set CUDA_TOOLKIT_ROOT_DIR if CUDA is installed
+        if: ${{ matrix.cublas != 'cpu' }}
+        run: |
+          "CUDA_TOOLKIT_ROOT_DIR=$env:CUDA_PATH" >> $env:GITHUB_ENV
+
+      - name: "Run Build-Windows.ps1"
+        run: "./Build-Windows.ps1"
+
+      - uses: "actions/upload-artifact@v4"
+        with:
+          name: "whispercpp-windows-${{ matrix.cublas }}"
+          path: "release/*.zip"
+
+  Release:
+    runs-on: "ubuntu-22.04"
+
+    if: "github.event_name == 'push' && contains(github.ref, 'refs/tags/')"
+
+    needs:
+      # - "BuildMac"
+      # - "BuildLinux"
+      - "BuildWindows"
+
+    permissions:
+      contents: "write"
+
+    defaults:
+      run:
+        shell: "bash"
+
+    steps:
+      - name: "Get version"
+        run: |
+          if [[ $GITHUB_REF =~ ^refs/tags/ ]]
+          then version="${GITHUB_REF#refs/tags/}"
+          else version=main
+          fi
+          printf "version=%s" "$version" > "$GITHUB_OUTPUT"
+        id: "get-version"
+
+      - name: "Download build artifacts"
+        uses: "actions/download-artifact@v4"
+
+      - name: "Create Release"
+        uses: "softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5"
+        with:
+          draft: true
+          tag_name: "${{ steps.get-version.outputs.version }}"
+          name: "${{ steps.get-version.outputs.version }}"
+          files: |
+            ${{ github.workspace }}/**/*.tar.gz
+            ${{ github.workspace }}/**/*.zip
