@@ -1,12 +1,12 @@
 
 # check env var CPU_OR_CUDA
 if ($env:CPU_OR_CUDA -eq $null) {
-    Write-Host "Please set env var CPU_OR_CUDA to 'CPU' or the CUDA version you want to use"
+    Write-Host "Please set env var CPU_OR_CUDA to 'cpu' or the CUDA version you want to use"
     exit
 }
 
 $cmakeArgs = @()
-if ($env:CPU_OR_CUDA -eq "CPU") {
+if ($env:CPU_OR_CUDA -eq "cpu") {
     $cmakeArgs += ("-DWHISPERCPP_WITH_CUDA=OFF")
 } else {
     $cmakeArgs += (
