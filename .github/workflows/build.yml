@@ -49,7 +49,7 @@ jobs:
       - name: "Upload artifact"
         uses: "actions/upload-artifact@v4"
         with:
-          name: "opencv-macos-${{ matrix.config }}"
+          name: "whispercpp-macos-${{ matrix.architecture }}"
           path: "release/*.tar.gz"
 
   BuildLinux:
@@ -83,7 +83,7 @@ jobs:
 
       - uses: "actions/upload-artifact@v4"
         with:
-          name: "opencv-linux-${{ matrix.config }}"
+          name: "whispercpp-linux-${{ matrix.config }}"
           path: "release/*.tar.gz"
 
   BuildWindows:
