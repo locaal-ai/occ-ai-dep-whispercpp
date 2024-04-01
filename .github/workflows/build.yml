@@ -50,7 +50,7 @@ jobs:
         uses: "actions/upload-artifact@v4"
         with:
           name: "whispercpp-macos-${{ matrix.architecture }}"
-          path: "release/*.tar.gz"
+          path: "*.tar.gz"
 
   BuildLinux:
     if: false
@@ -84,7 +84,7 @@ jobs:
       - uses: "actions/upload-artifact@v4"
         with:
           name: "whispercpp-linux-${{ matrix.config }}"
-          path: "release/*.tar.gz"
+          path: "*.tar.gz"
 
   BuildWindows:
     runs-on: "windows-2022"
@@ -127,7 +127,7 @@ jobs:
       - uses: "actions/upload-artifact@v4"
         with:
           name: "whispercpp-windows-${{ matrix.cublas }}"
-          path: "release/*.zip"
+          path: "*.zip"
 
   Release:
     runs-on: "ubuntu-22.04"
