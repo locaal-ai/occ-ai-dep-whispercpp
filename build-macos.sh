@@ -13,4 +13,4 @@ cmake --build build --config Release
 cmake --install build
 
 # compress the release folder
-tar -czvf whispercpp-macos-$version.tar.gz release
+tar -czvf whispercpp-macos-$MACOS_ARCH-$version.tar.gz release
