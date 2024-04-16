@@ -3,12 +3,14 @@ cmake_minimum_required(VERSION 3.21)
 project(Whispercpp_prebuilt)
 
 include(ExternalProject)
+include(FetchContent)
 
 option(WHISPERCPP_WITH_CUDA "Build Whisper with CUDA support" OFF)
+option(WHISPERCPP_WITH_CLBLAST "Build Whisper with CLBlast support" OFF)
 
 set(CMAKE_OSX_ARCHITECTURES_ "$ENV{MACOS_ARCH}")
 
-set(Whispercpp_Build_GIT_TAG "f22d27a385d34b1e544031efe8aa2e3d73922791")
+set(Whispercpp_Build_GIT_TAG "v1.5.5")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL Release OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
   set(Whispercpp_BUILD_TYPE Release)
@@ -49,6 +51,46 @@ if(WIN32)
     set(WHISPER_ADDITIONAL_ENV "CUDAToolkit_ROOT=${CUDA_TOOLKIT_ROOT_DIR}")
     set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_BLAS=OFF -DWHISPER_CUBLAS=ON -DWHISPER_OPENBLAS=OFF
                                       -DCMAKE_GENERATOR_TOOLSET=cuda=${CUDA_TOOLKIT_ROOT_DIR})
+  elseif(WHISPERCPP_WITH_CLBLAST)
+    # Build with CLBlast
+    set(CLBLAST_URL "https://github.com/CNugteren/CLBlast/releases/download/1.6.2/CLBlast-1.6.2-windows-x64.zip")
+    set(CLBLAST_SHA256 "09776AFACF89A960C59A0F072FE8595D8F49593B343E25C901F357DAC680018F")
+    FetchContent_Declare(
+      CLBlast
+      DOWNLOAD_EXTRACT_TIMESTAMP true
+      URL ${CLBLAST_URL}
+      URL_HASH SHA256=${CLBLAST_SHA256})
+    FetchContent_MakeAvailable(CLBlast)
+    find_program(SEVEN_ZIP_EXECUTABLE 7z)
+    if(NOT SEVEN_ZIP_EXECUTABLE)
+      message(FATAL_ERROR "7z executable not found!")
+    endif()
+    execute_process(
+      COMMAND ${SEVEN_ZIP_EXECUTABLE} x -y ${clblast_SOURCE_DIR}/CLBlast-1.6.2-windows-x64.7z
+      WORKING_DIRECTORY ${clblast_SOURCE_DIR}
+      RESULT_VARIABLE SEVEN_ZIP_RESULT
+      OUTPUT_QUIET
+    )
+    if(NOT SEVEN_ZIP_RESULT EQUAL 0)
+      message(FATAL_ERROR "Failed to extract CLBlast: ${SEVEN_ZIP_ERROR}")
+    endif()
+    set(clblast_SOURCE_DIR ${clblast_SOURCE_DIR}/CLBlast-1.6.2-windows-x64)
+
+    message(STATUS "clblast_SOURCE_DIR: ${clblast_SOURCE_DIR}")
+    set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+    find_package(CLBlast REQUIRED)
+
+    set(OPENCL_SDK_URL "https://github.com/KhronosGroup/OpenCL-SDK/releases/download/v2023.12.14/OpenCL-SDK-v2023.12.14-Win-x64.zip")
+    set(OPENCL_SDK_SHA256 "4C49F37A97B1B6D191B076C1E5D095B180E44BDC72DB32EC8B9748FF6ECFAEB6")
+    FetchContent_Declare(
+      OpenCL_SDK
+      DOWNLOAD_EXTRACT_TIMESTAMP true
+      URL ${OPENCL_SDK_URL}
+      URL_HASH SHA256=${OPENCL_SDK_SHA256})
+    FetchContent_MakeAvailable(OpenCL_SDK)
+
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_BLAS=OFF -DWHISPER_CUBLAS=OFF -DWHISPER_OPENBLAS=OFF
+      -DWHISPER_CLBLAST=ON -Dclblast_SOURCE_DIR=${clblast_SOURCE_DIR} -Dopencl_sdk_SOURCE_DIR=${opencl_sdk_SOURCE_DIR})
   else()
     # Build with OpenBLAS
     set(OpenBLAS_URL "https://github.com/xianyi/OpenBLAS/releases/download/v0.3.24/OpenBLAS-0.3.24-x64.zip")
@@ -72,7 +114,7 @@ if(WIN32)
     DOWNLOAD_EXTRACT_TIMESTAMP true
     GIT_REPOSITORY https://github.com/ggerganov/whisper.cpp.git
     GIT_TAG ${Whispercpp_Build_GIT_TAG}
-    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${Whispercpp_BUILD_TYPE}
+    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${Whispercpp_BUILD_TYPE} --verbose
     BUILD_BYPRODUCTS
       <INSTALL_DIR>/lib/static/${CMAKE_STATIC_LIBRARY_PREFIX}whisper${CMAKE_STATIC_LIBRARY_SUFFIX}
       <INSTALL_DIR>/bin/${CMAKE_SHARED_LIBRARY_PREFIX}whisper${CMAKE_SHARED_LIBRARY_SUFFIX}
@@ -88,11 +130,11 @@ if(WIN32)
       -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM} -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
       -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES_} -DCMAKE_CXX_FLAGS=${WHISPER_EXTRA_CXX_FLAGS}
       -DCMAKE_C_FLAGS=${WHISPER_EXTRA_CXX_FLAGS} -DBUILD_SHARED_LIBS=ON -DWHISPER_BUILD_TESTS=OFF
-      -DWHISPER_BUILD_EXAMPLES=OFF ${WHISPER_ADDITIONAL_CMAKE_ARGS})
+      -DWHISPER_BUILD_EXAMPLES=OFF -DCMAKE_MODULE_PATH=${CMAKE_SOURCE_DIR}/cmake ${WHISPER_ADDITIONAL_CMAKE_ARGS})
 
-  if(NOT WHISPERCPP_WITH_CUDA)
+  if(NOT WHISPERCPP_WITH_CUDA AND NOT WHISPERCPP_WITH_CLBLAST)
     add_dependencies(Whispercpp_Build OpenBLAS)
-  endif(NOT WHISPERCPP_WITH_CUDA)
+  endif()
 else()
   # On Linux and MacOS build a static Whisper library
   ExternalProject_Add(
@@ -123,12 +165,32 @@ if(WIN32)
   install(DIRECTORY ${INSTALL_DIR}/include DESTINATION ${CMAKE_SOURCE_DIR}/release)
   install(DIRECTORY ${INSTALL_DIR}/bin DESTINATION ${CMAKE_SOURCE_DIR}/release)
 
-  if(NOT WHISPERCPP_WITH_CUDA)
+  if(NOT WHISPERCPP_WITH_CUDA AND NOT WHISPERCPP_WITH_CLBLAST)
     # add openblas to the link line
     install(DIRECTORY ${OpenBLAS_DIR}/lib DESTINATION ${CMAKE_SOURCE_DIR}/release)
     install(DIRECTORY ${OpenBLAS_DIR}/include DESTINATION ${CMAKE_SOURCE_DIR}/release)
     install(DIRECTORY ${OpenBLAS_DIR}/bin DESTINATION ${CMAKE_SOURCE_DIR}/release)
-  else(NOT WHISPERCPP_WITH_CUDA)
+  elseif(WHISPERCPP_WITH_CLBLAST)
+    file(TO_CMAKE_PATH ${clblast_SOURCE_DIR} clblast_SOURCE_DIR)
+    # find the clblast DLLs in the bin directory of the CLBlast installation
+    file(GLOB CLBLAST_DLLS "${clblast_SOURCE_DIR}/bin/clblast.dll")
+    # if the files cannot be found, abort
+    if(NOT CLBLAST_DLLS)
+      message(FATAL_ERROR "Could not find CLBlast DLLs in ${clblast_SOURCE_DIR}/bin")
+    endif()
+    # copy the DLLs to the OBS plugin directory
+    install(FILES ${CLBLAST_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
+
+    file(TO_CMAKE_PATH ${opencl_sdk_SOURCE_DIR} opencl_sdk_SOURCE_DIR)
+    # find the opencl SDK DLLs in the bin directory of the OpenCL SDK installation
+    file(GLOB OPENCL_SDK_DLLS "${opencl_sdk_SOURCE_DIR}/bin/OpenCL.dll")
+    # if the files cannot be found, abort
+    if(NOT OPENCL_SDK_DLLS)
+      message(FATAL_ERROR "Could not find OpenCL SDK DLLs in ${opencl_sdk_SOURCE_DIR}/bin")
+    endif()
+    # copy the DLLs to the OBS plugin directory
+    install(FILES ${OPENCL_SDK_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
+  else()
     # normalize CUDA path with file(TO_CMAKE_PATH)
     file(TO_CMAKE_PATH ${CUDA_TOOLKIT_ROOT_DIR} CUDA_TOOLKIT_ROOT_DIR)
     # find the CUDA DLLs for cuBLAS in the bin directory of the CUDA installation e.g. cublas64_NN.dll
@@ -145,7 +207,7 @@ if(WIN32)
     endif()
     # copy the DLLs to the OBS plugin directory
     install(FILES ${CUBLAS_DLLS} ${CUBLASLT_DLLS} ${CUDART_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
-  endif(NOT WHISPERCPP_WITH_CUDA)
+  endif()
 else()
   # copy lib/ include/ and bin/ from ${INSTALL_DIR} to the release directory in the root of the project
   install(DIRECTORY ${INSTALL_DIR}/lib DESTINATION ${CMAKE_SOURCE_DIR}/release)
