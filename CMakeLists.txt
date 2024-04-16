@@ -93,20 +93,19 @@ if(WIN32)
       -DWHISPER_CLBLAST=ON -Dclblast_SOURCE_DIR=${clblast_SOURCE_DIR} -Dopencl_sdk_SOURCE_DIR=${opencl_sdk_SOURCE_DIR})
   else()
     # Build with OpenBLAS
-    set(OpenBLAS_URL "https://github.com/xianyi/OpenBLAS/releases/download/v0.3.24/OpenBLAS-0.3.24-x64.zip")
-    set(OpenBLAS_SHA256 "6335128ee7117ea2dd2f5f96f76dafc17256c85992637189a2d5f6da0c608163")
-    ExternalProject_Add(
+    set(OpenBLAS_URL "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.27/OpenBLAS-0.3.27-x64.zip")
+    set(OpenBLAS_SHA256 "7B4D7504F274F8E26001AAB4E25EC05032D90B8785B0355DC0D09247858D9F1E")
+    FetchContent_Declare(
       OpenBLAS
       URL ${OpenBLAS_URL}
       URL_HASH SHA256=${OpenBLAS_SHA256}
-      DOWNLOAD_NO_PROGRESS true
-      CONFIGURE_COMMAND ""
-      BUILD_COMMAND ""
-      INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR> <INSTALL_DIR>)
-    ExternalProject_Get_Property(OpenBLAS INSTALL_DIR)
-    set(OpenBLAS_DIR ${INSTALL_DIR})
-    set(WHISPER_ADDITIONAL_ENV "OPENBLAS_PATH=${OpenBLAS_DIR}")
-    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_BLAS=ON -DWHISPER_CUBLAS=OFF)
+      DOWNLOAD_EXTRACT_TIMESTAMP true
+    )
+    FetchContent_MakeAvailable(OpenBLAS)
+    set(OpenBLAS_DIR ${openblas_SOURCE_DIR})
+    message(STATUS "OpenBLAS_DIR: ${OpenBLAS_DIR}")
+    set(WHISPER_ADDITIONAL_ENV "OPENBLAS_PATH=${openblas_SOURCE_DIR}")
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_BLAS=ON -DWHISPER_OPENBLAS=ON -DWHISPER_CUBLAS=OFF)
   endif()
 
   ExternalProject_Add(
@@ -180,6 +179,7 @@ if(WIN32)
     endif()
     # copy the DLLs to the OBS plugin directory
     install(FILES ${CLBLAST_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
+    install(DIRECTORY ${clblast_SOURCE_DIR}/include ${opencl_sdk_SOURCE_DIR}/include DESTINATION ${CMAKE_SOURCE_DIR}/release)
 
     file(TO_CMAKE_PATH ${opencl_sdk_SOURCE_DIR} opencl_sdk_SOURCE_DIR)
     # find the opencl SDK DLLs in the bin directory of the OpenCL SDK installation
