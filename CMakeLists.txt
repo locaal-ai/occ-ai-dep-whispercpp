@@ -76,10 +76,6 @@ if(WIN32)
     endif()
     set(clblast_SOURCE_DIR ${clblast_SOURCE_DIR}/CLBlast-1.6.2-windows-x64)
 
-    message(STATUS "clblast_SOURCE_DIR: ${clblast_SOURCE_DIR}")
-    set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-    find_package(CLBlast REQUIRED)
-
     set(OPENCL_SDK_URL "https://github.com/KhronosGroup/OpenCL-SDK/releases/download/v2023.12.14/OpenCL-SDK-v2023.12.14-Win-x64.zip")
     set(OPENCL_SDK_SHA256 "4C49F37A97B1B6D191B076C1E5D095B180E44BDC72DB32EC8B9748FF6ECFAEB6")
     FetchContent_Declare(
@@ -88,6 +84,10 @@ if(WIN32)
       URL ${OPENCL_SDK_URL}
       URL_HASH SHA256=${OPENCL_SDK_SHA256})
     FetchContent_MakeAvailable(OpenCL_SDK)
+
+    message(STATUS "clblast_SOURCE_DIR: ${clblast_SOURCE_DIR}")
+    set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+    find_package(CLBlast REQUIRED)
 
     set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_BLAS=OFF -DWHISPER_CUBLAS=OFF -DWHISPER_OPENBLAS=OFF
       -DWHISPER_CLBLAST=ON -Dclblast_SOURCE_DIR=${clblast_SOURCE_DIR} -Dopencl_sdk_SOURCE_DIR=${opencl_sdk_SOURCE_DIR})
