@@ -93,8 +93,8 @@ if(WIN32)
       -DWHISPER_CLBLAST=ON -Dclblast_SOURCE_DIR=${clblast_SOURCE_DIR} -Dopencl_sdk_SOURCE_DIR=${opencl_sdk_SOURCE_DIR})
   else()
     # Build with OpenBLAS
-    set(OpenBLAS_URL "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.27/OpenBLAS-0.3.27-x64.zip")
-    set(OpenBLAS_SHA256 "7B4D7504F274F8E26001AAB4E25EC05032D90B8785B0355DC0D09247858D9F1E")
+    set(OpenBLAS_URL "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip")
+    set(OpenBLAS_SHA256 "859C510A962A30EF1B01AA93CDE26FDB5FB1050F94AD5AB2802EBA3731935E06")
     FetchContent_Declare(
       OpenBLAS
       URL ${OpenBLAS_URL}
