@@ -112,7 +112,7 @@ jobs:
       - name: Install CUDA Toolkit
         if: ${{ matrix.cublas != 'cpu' && matrix.cublas != 'clblast' }}
         id: cuda-toolkit
-        uses: Jimver/cuda-toolkit@v0.2.11
+        uses: Jimver/cuda-toolkit@v0.2.15
         with:
           cuda: '${{ matrix.cublas }}'
 
