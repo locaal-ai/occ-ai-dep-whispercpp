@@ -50,12 +50,11 @@ if(WIN32)
     if (NOT DEFINED ENV{HIP_PATH})
       message(FATAL_ERROR "HIP_PATH is not set. Please set it to the root directory of your HIP installation, e.g. `C:/Program Files/ROCm`")
     endif(NOT DEFINED ENV{HIP_PATH})
-    set(WHISPER_ADDITIONAL_ENV "CMAKE_PREFIX_PATH=$ENV{HIP_PATH} CC=$ENV{HIP_PATH}/bin/clang.exe CXX=$ENV{HIP_PATH}/bin/clang++.exe")
-    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DCMAKE_C_COMPILER="$ENV{HIP_PATH}/bin/clang.exe" 
-      -DCMAKE_CXX_COMPILER="$ENV{HIP_PATH}/bin/clang++.exe" 
-      -DCMAKE_HIP_COMPILER="$ENV{HIP_PATH}/bin/clang++.exe"
-      -DGGML_HIPBLAS=ON)
-    set(WHISPER_CMAKE_GENERATOR "Unix Makefiles")
+    cmake_path(SET HIP_PATH_STR NORMALIZE "$ENV{HIP_PATH}")
+    set(WHISPER_ADDITIONAL_ENV "CMAKE_PREFIX_PATH=${HIP_PATH_STR}")
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DCMAKE_C_COMPILER='${HIP_PATH_STR}/bin/clang.exe'
+      -DCMAKE_CXX_COMPILER='${HIP_PATH_STR}/bin/clang++.exe' -DGGML_HIPBLAS=ON -DGGML_CUDA=OFF)
+    set(WHISPER_CMAKE_GENERATOR ${CMAKE_GENERATOR})
   else()
     # Build with OpenBLAS
     set(OpenBLAS_URL "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip")
