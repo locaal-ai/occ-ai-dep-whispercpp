@@ -19,6 +19,7 @@ if ($env:BUILD_WITH_ACCEL -eq "cpu") {
         "-DCMAKE_C_COMPILER='$env:HIP_PATH\bin\clang.exe'",
         "-DCMAKE_CXX_COMPILER='$env:HIP_PATH\bin\clang++.exe'")
     $zipFileName = "whispercpp-windows-hipblas-$Version.zip"
+    $env:HIP_PLATFORM="amd"
 } else {
     $cmakeArgs += (
         "-DWHISPERCPP_WITH_CUDA=ON",
