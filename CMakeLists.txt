@@ -46,8 +46,8 @@ if(WIN32)
                                       -DCMAKE_GENERATOR_TOOLSET=cuda=${CUDA_TOOLKIT_ROOT_DIR})
   elseif(WHISPERCPP_WITH_HIPBLAS)
     # Build with hipBLAS
-    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DCMAKE_C_COMPILER="${env:HIP_PATH}/bin/clang.exe" 
-      -DCMAKE_CXX_COMPILER="${env:HIP_PATH}/bin/clang++.exe" -DGGML_HIPBLAS=ON)
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DCMAKE_C_COMPILER="$ENV{HIP_PATH}/bin/clang.exe" 
+      -DCMAKE_CXX_COMPILER="$ENV{HIP_PATH}/bin/clang++.exe" -DGGML_HIPBLAS=ON)
   else()
     # Build with OpenBLAS
     set(OpenBLAS_URL "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip")
@@ -62,7 +62,8 @@ if(WIN32)
     set(OpenBLAS_DIR ${openblas_SOURCE_DIR})
     message(STATUS "OpenBLAS_DIR: ${OpenBLAS_DIR}")
     set(WHISPER_ADDITIONAL_ENV "OPENBLAS_PATH=${openblas_SOURCE_DIR}")
-    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_BLAS=ON -DWHISPER_OPENBLAS=ON -DGGML_CUDA=OFF)
+    # -DBLAS_INCLUDE_DIRS="$env:RUNNER_TEMP/openblas/include" -DBLAS_LIBRARIES="$env:RUNNER_TEMP/openblas/lib/openblas.lib"
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=OpenBLAS -DGGML_CUDA=OFF)
   endif()
 
   ExternalProject_Add(
