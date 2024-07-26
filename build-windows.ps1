@@ -13,7 +13,11 @@ if ($env:BUILD_WITH_ACCEL -eq "cpu") {
     $cmakeArgs += ("-DWHISPERCPP_WITH_CUDA=OFF")
     $zipFileName = "whispercpp-windows-cpu-$Version.zip"
 } elseif ($env:BUILD_WITH_ACCEL -eq "hipblas") {
-    $cmakeArgs += ("-DWHISPERCPP_WITH_CUDA=OFF", "-DWHISPERCPP_WITH_HIPBLAS=ON", "-DCMAKE_GENERATOR=Unix Makefiles")
+    $cmakeArgs += ("-DWHISPERCPP_WITH_CUDA=OFF", 
+        "-DWHISPERCPP_WITH_HIPBLAS=ON", 
+        "-DCMAKE_GENERATOR=Unix Makefiles", 
+        "-DCMAKE_C_COMPILER='$env:HIP_PATH\bin\clang.exe'",
+        "-DCMAKE_CXX_COMPILER='$env:HIP_PATH\bin\clang++.exe'")
     $zipFileName = "whispercpp-windows-hipblas-$Version.zip"
 } else {
     $cmakeArgs += (
