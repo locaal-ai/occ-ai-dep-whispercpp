@@ -46,6 +46,7 @@ if(WIN32)
                                       -DCMAKE_GENERATOR_TOOLSET=cuda=${CUDA_TOOLKIT_ROOT_DIR})
   elseif(WHISPERCPP_WITH_HIPBLAS)
     # Build with hipBLAS
+    set(WHISPER_ADDITIONAL_ENV "CMAKE_PREFIX_PATH=$ENV{HIP_PATH}")
     set(WHISPER_ADDITIONAL_CMAKE_ARGS -DCMAKE_C_COMPILER="$ENV{HIP_PATH}/bin/clang.exe" 
       -DCMAKE_CXX_COMPILER="$ENV{HIP_PATH}/bin/clang++.exe" -DGGML_HIPBLAS=ON)
   else()
@@ -62,8 +63,8 @@ if(WIN32)
     set(OpenBLAS_DIR ${openblas_SOURCE_DIR})
     message(STATUS "OpenBLAS_DIR: ${OpenBLAS_DIR}")
     set(WHISPER_ADDITIONAL_ENV "OPENBLAS_PATH=${openblas_SOURCE_DIR}")
-    # -DBLAS_INCLUDE_DIRS="$env:RUNNER_TEMP/openblas/include" -DBLAS_LIBRARIES="$env:RUNNER_TEMP/openblas/lib/openblas.lib"
-    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=OpenBLAS -DGGML_CUDA=OFF)
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=OpenBLAS -DGGML_CUDA=OFF
+      -DBLAS_LIBRARIES=${OpenBLAS_DIR}/lib/openblas.lib -DBLAS_INCLUDE_DIRS=${OpenBLAS_DIR}/include)
   endif()
 
   ExternalProject_Add(
@@ -80,7 +81,7 @@ if(WIN32)
     INSTALL_COMMAND
       ${CMAKE_COMMAND} --install <BINARY_DIR> --config ${Whispercpp_BUILD_TYPE} && ${CMAKE_COMMAND} -E copy
       <BINARY_DIR>/${Whispercpp_BUILD_TYPE}/whisper.lib <INSTALL_DIR>/lib && ${CMAKE_COMMAND} -E copy
-      <SOURCE_DIR>/ggml.h <INSTALL_DIR>/include
+      <SOURCE_DIR>/ggml/include/ggml.h <INSTALL_DIR>/include
     CONFIGURE_COMMAND
       ${CMAKE_COMMAND} -E env ${WHISPER_ADDITIONAL_ENV} ${CMAKE_COMMAND} <SOURCE_DIR> -B <BINARY_DIR> -G
       ${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DCMAKE_BUILD_TYPE=${Whispercpp_BUILD_TYPE}
