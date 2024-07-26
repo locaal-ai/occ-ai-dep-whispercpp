@@ -6,7 +6,7 @@ include(ExternalProject)
 include(FetchContent)
 
 option(WHISPERCPP_WITH_CUDA "Build Whisper with CUDA support" OFF)
-option(WHISPERCPP_WITH_CLBLAST "Build Whisper with CLBlast support" OFF)
+option(WHISPERCPP_WITH_HIPBLAS "Build Whisper with hipBLAS support" OFF)
 
 set(CMAKE_OSX_ARCHITECTURES_ "$ENV{MACOS_ARCH}")
 
@@ -44,46 +44,10 @@ if(WIN32)
     set(WHISPER_ADDITIONAL_ENV "CUDAToolkit_ROOT=${CUDA_TOOLKIT_ROOT_DIR}")
     set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_CUDA=ON
                                       -DCMAKE_GENERATOR_TOOLSET=cuda=${CUDA_TOOLKIT_ROOT_DIR})
-  elseif(WHISPERCPP_WITH_CLBLAST)
-    # Build with CLBlast
-    set(CLBLAST_URL "https://github.com/CNugteren/CLBlast/releases/download/1.6.2/CLBlast-1.6.2-windows-x64.zip")
-    set(CLBLAST_SHA256 "09776AFACF89A960C59A0F072FE8595D8F49593B343E25C901F357DAC680018F")
-    FetchContent_Declare(
-      CLBlast
-      DOWNLOAD_EXTRACT_TIMESTAMP true
-      URL ${CLBLAST_URL}
-      URL_HASH SHA256=${CLBLAST_SHA256})
-    FetchContent_MakeAvailable(CLBlast)
-    find_program(SEVEN_ZIP_EXECUTABLE 7z)
-    if(NOT SEVEN_ZIP_EXECUTABLE)
-      message(FATAL_ERROR "7z executable not found!")
-    endif()
-    execute_process(
-      COMMAND ${SEVEN_ZIP_EXECUTABLE} x -y ${clblast_SOURCE_DIR}/CLBlast-1.6.2-windows-x64.7z
-      WORKING_DIRECTORY ${clblast_SOURCE_DIR}
-      RESULT_VARIABLE SEVEN_ZIP_RESULT
-      OUTPUT_QUIET
-    )
-    if(NOT SEVEN_ZIP_RESULT EQUAL 0)
-      message(FATAL_ERROR "Failed to extract CLBlast: ${SEVEN_ZIP_ERROR}")
-    endif()
-    set(clblast_SOURCE_DIR ${clblast_SOURCE_DIR}/CLBlast-1.6.2-windows-x64)
-
-    set(OPENCL_SDK_URL "https://github.com/KhronosGroup/OpenCL-SDK/releases/download/v2023.12.14/OpenCL-SDK-v2023.12.14-Win-x64.zip")
-    set(OPENCL_SDK_SHA256 "4C49F37A97B1B6D191B076C1E5D095B180E44BDC72DB32EC8B9748FF6ECFAEB6")
-    FetchContent_Declare(
-      OpenCL_SDK
-      DOWNLOAD_EXTRACT_TIMESTAMP true
-      URL ${OPENCL_SDK_URL}
-      URL_HASH SHA256=${OPENCL_SDK_SHA256})
-    FetchContent_MakeAvailable(OpenCL_SDK)
-
-    message(STATUS "clblast_SOURCE_DIR: ${clblast_SOURCE_DIR}")
-    set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-    find_package(CLBlast REQUIRED)
-
-    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_BLAS=OFF -DWHISPER_CUBLAS=OFF -DWHISPER_OPENBLAS=OFF
-      -DWHISPER_CLBLAST=ON -Dclblast_SOURCE_DIR=${clblast_SOURCE_DIR} -Dopencl_sdk_SOURCE_DIR=${opencl_sdk_SOURCE_DIR})
+  elseif(WHISPERCPP_WITH_HIPBLAS)
+    # Build with hipBLAS
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DCMAKE_C_COMPILER="${env:HIP_PATH}/bin/clang.exe" 
+      -DCMAKE_CXX_COMPILER="${env:HIP_PATH}/bin/clang++.exe" -DGGML_HIPBLAS=ON)
   else()
     # Build with OpenBLAS
     set(OpenBLAS_URL "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip")
@@ -98,8 +62,7 @@ if(WIN32)
     set(OpenBLAS_DIR ${openblas_SOURCE_DIR})
     message(STATUS "OpenBLAS_DIR: ${OpenBLAS_DIR}")
     set(WHISPER_ADDITIONAL_ENV "OPENBLAS_PATH=${openblas_SOURCE_DIR}")
-    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_BLAS=ON -DWHISPER_OPENBLAS=ON -DWHISPER_CUBLAS=OFF
-      -DWHISPER_CLBLAST=OFF)
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DWHISPER_BLAS=ON -DWHISPER_OPENBLAS=ON -DGGML_CUDA=OFF)
   endif()
 
   ExternalProject_Add(
@@ -155,32 +118,33 @@ if(WIN32)
   install(DIRECTORY ${INSTALL_DIR}/include DESTINATION ${CMAKE_SOURCE_DIR}/release)
   install(DIRECTORY ${INSTALL_DIR}/bin DESTINATION ${CMAKE_SOURCE_DIR}/release)
 
-  if(NOT WHISPERCPP_WITH_CUDA AND NOT WHISPERCPP_WITH_CLBLAST)
+  if(NOT WHISPERCPP_WITH_CUDA AND NOT WHISPERCPP_WITH_HIPBLAS)
     # add openblas to the link line
     install(DIRECTORY ${OpenBLAS_DIR}/lib DESTINATION ${CMAKE_SOURCE_DIR}/release)
     install(DIRECTORY ${OpenBLAS_DIR}/include DESTINATION ${CMAKE_SOURCE_DIR}/release)
     install(DIRECTORY ${OpenBLAS_DIR}/bin DESTINATION ${CMAKE_SOURCE_DIR}/release)
-  elseif(WHISPERCPP_WITH_CLBLAST)
-    file(TO_CMAKE_PATH ${clblast_SOURCE_DIR} clblast_SOURCE_DIR)
-    # find the clblast DLLs in the bin directory of the CLBlast installation
-    file(GLOB CLBLAST_DLLS "${clblast_SOURCE_DIR}/bin/clblast.dll")
-    # if the files cannot be found, abort
-    if(NOT CLBLAST_DLLS)
-      message(FATAL_ERROR "Could not find CLBlast DLLs in ${clblast_SOURCE_DIR}/bin")
-    endif()
-    # copy the DLLs to the OBS plugin directory
-    install(FILES ${CLBLAST_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
-    install(DIRECTORY ${clblast_SOURCE_DIR}/include ${opencl_sdk_SOURCE_DIR}/include DESTINATION ${CMAKE_SOURCE_DIR}/release)
+  elseif(WHISPERCPP_WITH_HIPBLAS)
+    message(STATUS "Copying HIP DLLs")
+    # file(TO_CMAKE_PATH ${clblast_SOURCE_DIR} clblast_SOURCE_DIR)
+    # # find the clblast DLLs in the bin directory of the CLBlast installation
+    # file(GLOB CLBLAST_DLLS "${clblast_SOURCE_DIR}/bin/clblast.dll")
+    # # if the files cannot be found, abort
+    # if(NOT CLBLAST_DLLS)
+    #   message(FATAL_ERROR "Could not find CLBlast DLLs in ${clblast_SOURCE_DIR}/bin")
+    # endif()
+    # # copy the DLLs to the OBS plugin directory
+    # install(FILES ${CLBLAST_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
+    # install(DIRECTORY ${clblast_SOURCE_DIR}/include ${opencl_sdk_SOURCE_DIR}/include DESTINATION ${CMAKE_SOURCE_DIR}/release)
 
-    file(TO_CMAKE_PATH ${opencl_sdk_SOURCE_DIR} opencl_sdk_SOURCE_DIR)
-    # find the opencl SDK DLLs in the bin directory of the OpenCL SDK installation
-    file(GLOB OPENCL_SDK_DLLS "${opencl_sdk_SOURCE_DIR}/bin/OpenCL.dll")
-    # if the files cannot be found, abort
-    if(NOT OPENCL_SDK_DLLS)
-      message(FATAL_ERROR "Could not find OpenCL SDK DLLs in ${opencl_sdk_SOURCE_DIR}/bin")
-    endif()
-    # copy the DLLs to the OBS plugin directory
-    install(FILES ${OPENCL_SDK_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
+    # file(TO_CMAKE_PATH ${opencl_sdk_SOURCE_DIR} opencl_sdk_SOURCE_DIR)
+    # # find the opencl SDK DLLs in the bin directory of the OpenCL SDK installation
+    # file(GLOB OPENCL_SDK_DLLS "${opencl_sdk_SOURCE_DIR}/bin/OpenCL.dll")
+    # # if the files cannot be found, abort
+    # if(NOT OPENCL_SDK_DLLS)
+    #   message(FATAL_ERROR "Could not find OpenCL SDK DLLs in ${opencl_sdk_SOURCE_DIR}/bin")
+    # endif()
+    # # copy the DLLs to the OBS plugin directory
+    # install(FILES ${OPENCL_SDK_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
   else()
     # normalize CUDA path with file(TO_CMAKE_PATH)
     file(TO_CMAKE_PATH ${CUDA_TOOLKIT_ROOT_DIR} CUDA_TOOLKIT_ROOT_DIR)
