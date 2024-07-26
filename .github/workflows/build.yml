@@ -93,7 +93,7 @@ jobs:
       matrix:
         config:
           - "Release"
-        cublas: [cpu, 12.2.0, 11.8.0, clblast]
+        accel: [cpu, cuda, hipblas]
 
     steps:
       - name: "Get version"
@@ -110,25 +110,49 @@ jobs:
         uses: "actions/checkout@v4"
 
       - name: Install CUDA Toolkit
-        if: ${{ matrix.cublas != 'cpu' && matrix.cublas != 'clblast' }}
+        if: ${{ matrix.accel == 'cuda' }}
         id: cuda-toolkit
-        uses: Jimver/cuda-toolkit@v0.2.15
+        uses: Jimver/cuda-toolkit@v0.2.16
         with:
-          cuda: '${{ matrix.cublas }}'
+          cuda: '12.5.0'
+          sub-packages: '["cudart", "nvcc", "cublas", "cublas_dev", "visual_studio_integration"]'
 
       - name: Set CUDA_TOOLKIT_ROOT_DIR if CUDA is installed
-        if: ${{ matrix.cublas != 'cpu' && matrix.cublas != 'clblast' }}
+        if: ${{ matrix.accel == 'cuda' }}
         run: |
           "CUDA_TOOLKIT_ROOT_DIR=$env:CUDA_PATH" >> $env:GITHUB_ENV
+
+      - name: Install hipBLAS
+        id: depends-hipblas
+        if: ${{ matrix.accel == 'hipblas' }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          write-host "Downloading AMD HIP SDK Installer"
+          Invoke-WebRequest -Uri "https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-24.Q3-Win10-Win11-For-HIP.exe" -OutFile "${env:RUNNER_TEMP}\rocm-install.exe"
+          write-host "Installing AMD HIP SDK"
+          Start-Process "${env:RUNNER_TEMP}\rocm-install.exe" -ArgumentList '-install' -NoNewWindow -Wait
+          write-host "Completed AMD HIP SDK installation"
+
+      - name: Verify ROCm
+        id: verify-hipblas
+        if: ${{ matrix.accel == 'hipblas' }}
+        run: |
+          & 'C:\Program Files\AMD\ROCm\*\bin\clang.exe' --version
+
+      - name: Prepare hipBLAS environment
+        id: prepare-hipblas
+        if: ${{ matrix.accel == 'hipblas' }}
+        run: |
+          "HIP_PATH=$(Resolve-Path 'C:\Program Files\AMD\ROCm\*\bin\clang.exe' | split-path | split-path)" >> $env:GITHUB_ENV
 
       - name: "Run Build-Windows.ps1"
         run: "./Build-Windows.ps1 -Version ${{ steps.get-version.outputs.version }}"
         env:
-          CPU_OR_CUDA: ${{ matrix.cublas }}
+          BUILD_WITH_ACCEL: ${{ matrix.accel }}
 
       - uses: "actions/upload-artifact@v4"
         with:
-          name: "whispercpp-windows-${{ matrix.cublas }}"
+          name: "whispercpp-windows-${{ matrix.accel }}"
           path: "*.zip"
 
   Release:
