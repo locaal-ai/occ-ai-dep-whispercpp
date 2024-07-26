@@ -64,7 +64,7 @@ if(WIN32)
     message(STATUS "OpenBLAS_DIR: ${OpenBLAS_DIR}")
     set(WHISPER_ADDITIONAL_ENV "OPENBLAS_PATH=${openblas_SOURCE_DIR}")
     set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=OpenBLAS -DGGML_CUDA=OFF
-      -DBLAS_LIBRARIES=${OpenBLAS_DIR}/lib/openblas.lib -DBLAS_INCLUDE_DIRS=${OpenBLAS_DIR}/include)
+      -DBLAS_LIBRARIES=${OpenBLAS_DIR}/lib/libopenblas.lib -DBLAS_INCLUDE_DIRS=${OpenBLAS_DIR}/include)
   endif()
 
   ExternalProject_Add(
