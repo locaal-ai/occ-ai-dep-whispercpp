@@ -93,7 +93,7 @@ jobs:
       matrix:
         config:
           - "Release"
-        cublas: [cpu, 12.2.0, hipblas]
+        cublas: [cpu, 12.2.0]
 
     steps:
       - name: "Get version"
