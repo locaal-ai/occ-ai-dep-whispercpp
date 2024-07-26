@@ -93,7 +93,7 @@ jobs:
       matrix:
         config:
           - "Release"
-        cublas: [cpu, 12.2.0, 11.8.0, clblast]
+        cublas: [cpu, 12.2.0, hipblas]
 
     steps:
       - name: "Get version"
@@ -110,14 +110,15 @@ jobs:
         uses: "actions/checkout@v4"
 
       - name: Install CUDA Toolkit
-        if: ${{ matrix.cublas != 'cpu' && matrix.cublas != 'clblast' }}
+        if: ${{ matrix.cublas != 'cpu' && matrix.cublas != 'hipblas' }}
         id: cuda-toolkit
-        uses: Jimver/cuda-toolkit@v0.2.15
+        uses: Jimver/cuda-toolkit@v0.2.16
         with:
           cuda: '${{ matrix.cublas }}'
+          sub-packages: '["compiler", "cublas", "cublas_dev"]'
 
       - name: Set CUDA_TOOLKIT_ROOT_DIR if CUDA is installed
-        if: ${{ matrix.cublas != 'cpu' && matrix.cublas != 'clblast' }}
+        if: ${{ matrix.cublas != 'cpu' && matrix.cublas != 'hipblas' }}
         run: |
           "CUDA_TOOLKIT_ROOT_DIR=$env:CUDA_PATH" >> $env:GITHUB_ENV
 
