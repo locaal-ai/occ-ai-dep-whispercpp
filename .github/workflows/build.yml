@@ -141,6 +141,7 @@ jobs:
 
       - name: Prepare hipBLAS environment
         id: prepare-hipblas
+        if: ${{ matrix.accel == 'hipblas' }}
         run: |
           "HIP_PATH=$(Resolve-Path 'C:\Program Files\AMD\ROCm\*\bin\clang.exe' | split-path | split-path)" >> $env:GITHUB_ENV
 
