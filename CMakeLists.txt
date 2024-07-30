@@ -209,7 +209,7 @@ else()
           DESTINATION ${CMAKE_SOURCE_DIR}/release)
   if(APPLE)
     # copy the Metal shader library to the release directory
-    install(DIRECTORY ${INSTALL_DIR}/lib/bin
+    install(DIRECTORY ${INSTALL_DIR}/bin
             DESTINATION ${CMAKE_SOURCE_DIR}/release)
     install(
       FILES
