@@ -10,7 +10,8 @@ option(WHISPERCPP_WITH_HIPBLAS "Build Whisper with hipBLAS support" OFF)
 
 set(CMAKE_OSX_ARCHITECTURES_ "$ENV{MACOS_ARCH}")
 
-set(Whispercpp_Build_GIT_TAG "f68298ce06ca3edd6e6f3f21c3d0bb5f073942c3")
+set(Whispercpp_Build_GIT_REPO "https://github.com/palana/whisper.cpp")
+set(Whispercpp_Build_GIT_TAG "8ceedbbea6174ffe11e0ecf18f0c64b4f57532a8")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL Release OR ${CMAKE_BUILD_TYPE} STREQUAL
                                            RelWithDebInfo)
@@ -95,7 +96,7 @@ if(WIN32)
   ExternalProject_Add(
     Whispercpp_Build
     DOWNLOAD_EXTRACT_TIMESTAMP true
-    GIT_REPOSITORY https://github.com/ggerganov/whisper.cpp.git
+    GIT_REPOSITORY ${Whispercpp_Build_GIT_REPO}
     GIT_TAG ${Whispercpp_Build_GIT_TAG}
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config
                   ${Whispercpp_BUILD_TYPE} --verbose
@@ -126,7 +127,7 @@ else()
   ExternalProject_Add(
     Whispercpp_Build
     DOWNLOAD_EXTRACT_TIMESTAMP true
-    GIT_REPOSITORY https://github.com/ggerganov/whisper.cpp.git
+    GIT_REPOSITORY ${Whispercpp_Build_GIT_REPO}
     GIT_TAG ${Whispercpp_Build_GIT_TAG}
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config
                   ${Whispercpp_BUILD_TYPE}
