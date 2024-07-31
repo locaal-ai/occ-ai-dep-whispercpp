@@ -31,10 +31,12 @@ if ($env:BUILD_WITH_ACCEL -eq "cpu") {
 # configure
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release @cmakeArgs
 
-cmake --build build --config Release
+cmake --build build --config RelWithDebInfo
 
 # install
 cmake --install build
+
+Get-ChildItem
 
 # compress the release folder
 Compress-Archive -Force -Path release -DestinationPath $zipFileName
