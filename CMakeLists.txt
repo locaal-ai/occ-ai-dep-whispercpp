@@ -152,6 +152,7 @@ else()
 endif(WIN32)
 
 ExternalProject_Get_Property(Whispercpp_Build INSTALL_DIR)
+ExternalProject_Get_Property(Whispercpp_Build BINARY_DIR)
 
 # add the Whisper library to the link line
 if(WIN32)
@@ -206,4 +207,13 @@ else()
   install(DIRECTORY ${INSTALL_DIR}/lib DESTINATION ${CMAKE_SOURCE_DIR}/release)
   install(DIRECTORY ${INSTALL_DIR}/include
           DESTINATION ${CMAKE_SOURCE_DIR}/release)
+  if(APPLE)
+    # copy the Metal shader library to the release directory
+    install(DIRECTORY ${INSTALL_DIR}/bin
+            DESTINATION ${CMAKE_SOURCE_DIR}/release)
+    install(
+      FILES
+        ${BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}whisper.coreml${CMAKE_STATIC_LIBRARY_SUFFIX}
+      DESTINATION ${CMAKE_SOURCE_DIR}/release/lib)
+  endif()
 endif(WIN32)
