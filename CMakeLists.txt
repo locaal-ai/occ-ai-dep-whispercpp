@@ -10,7 +10,7 @@ option(WHISPERCPP_WITH_HIPBLAS "Build Whisper with hipBLAS support" OFF)
 
 set(CMAKE_OSX_ARCHITECTURES_ "$ENV{MACOS_ARCH}")
 
-set(Whispercpp_Build_GIT_TAG "f68298ce06ca3edd6e6f3f21c3d0bb5f073942c3")
+set(Whispercpp_Build_GIT_TAG "c4e1861d2c24b186cbbac6c07480aaa298b0e6d9")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL Release OR ${CMAKE_BUILD_TYPE} STREQUAL
                                            RelWithDebInfo)
@@ -41,18 +41,9 @@ endif()
 
 if(WIN32)
   if(WHISPERCPP_WITH_CUDA)
-    # Build with CUDA Check that CUDA_TOOLKIT_ROOT_DIR is set
-    if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
-      message(
-        FATAL_ERROR
-          "CUDA_TOOLKIT_ROOT_DIR is not set. Please set it to the root directory of your CUDA "
-          "installation, e.g. `C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.4`"
-      )
-    endif(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
-
-    set(WHISPER_ADDITIONAL_ENV "CUDAToolkit_ROOT=${CUDA_TOOLKIT_ROOT_DIR}")
-    set(WHISPER_ADDITIONAL_CMAKE_ARGS
-        -DGGML_CUDA=ON -DCMAKE_GENERATOR_TOOLSET=cuda=${CUDA_TOOLKIT_ROOT_DIR})
+    # Build with CUDA
+    set(WHISPER_ADDITIONAL_ENV "")
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_CUDA=ON)
     set(WHISPER_CMAKE_GENERATOR ${CMAKE_GENERATOR})
   elseif(WHISPERCPP_WITH_HIPBLAS)
     # Build with hipBLAS
@@ -104,12 +95,8 @@ if(WIN32)
       <INSTALL_DIR>/bin/${CMAKE_SHARED_LIBRARY_PREFIX}whisper${CMAKE_SHARED_LIBRARY_SUFFIX}
       <INSTALL_DIR>/lib/${CMAKE_IMPORT_LIBRARY_PREFIX}whisper${CMAKE_IMPORT_LIBRARY_SUFFIX}
     CMAKE_GENERATOR ${CMAKE_GENERATOR}
-    INSTALL_COMMAND
-      ${CMAKE_COMMAND} --install <BINARY_DIR> --config ${Whispercpp_BUILD_TYPE}
-      && ${CMAKE_COMMAND} -E copy
-      <BINARY_DIR>/${Whispercpp_BUILD_TYPE}/whisper.lib <INSTALL_DIR>/lib &&
-      ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/ggml/include/ggml.h
-      <INSTALL_DIR>/include
+    INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --config
+                    ${Whispercpp_BUILD_TYPE}
     CONFIGURE_COMMAND
       ${CMAKE_COMMAND} -E env ${WHISPER_ADDITIONAL_ENV} ${CMAKE_COMMAND}
       <SOURCE_DIR> -B <BINARY_DIR> -G ${WHISPER_CMAKE_GENERATOR}
@@ -179,6 +166,15 @@ if(WIN32)
         "${HIP_PATH_STR}/bin/amd_comgr_2.dll")
     install(FILES ${HIPBLAS_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
   else()
+    # Check that CUDA_TOOLKIT_ROOT_DIR is set
+    if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
+      message(
+        FATAL_ERROR
+          "CUDA_TOOLKIT_ROOT_DIR is not set. Please set it to the root directory of your CUDA "
+          "installation, e.g. `C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.4`"
+      )
+    endif(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
+
     # normalize CUDA path with file(TO_CMAKE_PATH)
     file(TO_CMAKE_PATH ${CUDA_TOOLKIT_ROOT_DIR} CUDA_TOOLKIT_ROOT_DIR)
     # find the CUDA DLLs for cuBLAS in the bin directory of the CUDA

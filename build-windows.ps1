@@ -8,6 +8,9 @@ if ($env:BUILD_WITH_ACCEL -eq $null) {
     exit
 }
 
+$env:CMAKE_TOOLCHAIN_FILE=""
+$env:VCPKG_ROOT=""
+
 $cmakeArgs = @()
 if ($env:BUILD_WITH_ACCEL -eq "cpu") {
     $cmakeArgs += ("-DWHISPERCPP_WITH_CUDA=OFF")
@@ -23,6 +26,7 @@ if ($env:BUILD_WITH_ACCEL -eq "cpu") {
 } else {
     $cmakeArgs += (
         "-DWHISPERCPP_WITH_CUDA=ON",
+        "-DCMAKE_GENERATOR=Visual Studio 17 2022",
         "-DCUDA_TOOLKIT_ROOT_DIR=$env:CUDA_TOOLKIT_ROOT_DIR"
     )
     $zipFileName = "whispercpp-windows-cuda-$Version.zip"
