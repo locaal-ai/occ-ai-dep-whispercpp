@@ -10,7 +10,7 @@ option(WHISPERCPP_WITH_HIPBLAS "Build Whisper with hipBLAS support" OFF)
 
 set(CMAKE_OSX_ARCHITECTURES_ "$ENV{MACOS_ARCH}")
 
-set(Whispercpp_Build_GIT_TAG "c4e1861d2c24b186cbbac6c07480aaa298b0e6d9")
+set(Whispercpp_Build_GIT_TAG "fdbfb460ed546452a5d53611bba66d10d842e719")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL Release OR ${CMAKE_BUILD_TYPE} STREQUAL
                                            RelWithDebInfo)
@@ -22,7 +22,11 @@ endif()
 if(UNIX AND NOT APPLE)
   # On linux add the `-fPIC` flag to the compiler
   set(WHISPER_EXTRA_CXX_FLAGS "-fPIC")
-  set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_CUDA=OFF)
+  if(WHISPERCPP_WITH_VULKAN)
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_CUDA=OFF -DGGML_VULKAN=ON)
+  else()
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_CUDA=OFF)
+  endif()
 endif()
 if(APPLE)
   # check the "MACOS_ARCH" env var to figure out if this is x86_64 or arm64
@@ -44,6 +48,17 @@ if(WIN32)
     # Build with CUDA
     set(WHISPER_ADDITIONAL_ENV "")
     set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_CUDA=ON)
+    set(WHISPER_CMAKE_GENERATOR ${CMAKE_GENERATOR})
+  elseif(WHISPERCPP_WITH_VULKAN)
+    if(NOT DEFINED ENV{VULKAN_SDK_PATH})
+      message(
+        FATAL_ERROR
+          "VULKAN_SDK_PATH is not set. Please set it to the root directory of your VulkanSDK installation, e.g. `C:/VulkanSDK/1.3.296.0`"
+      )
+    endif()
+    # Build with VULKAN
+    set(WHISPER_ADDITIONAL_ENV "VULKAN_SDK=$ENV{VULKAN_SDK_PATH}")
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS -DGGML_VULKAN=ON)
     set(WHISPER_CMAKE_GENERATOR ${CMAKE_GENERATOR})
   elseif(WHISPERCPP_WITH_HIPBLAS)
     # Build with hipBLAS
@@ -150,22 +165,16 @@ if(WIN32)
           DESTINATION ${CMAKE_SOURCE_DIR}/release)
   install(DIRECTORY ${INSTALL_DIR}/bin DESTINATION ${CMAKE_SOURCE_DIR}/release)
 
-  if(NOT WHISPERCPP_WITH_CUDA AND NOT WHISPERCPP_WITH_HIPBLAS)
-    # add openblas to the link line
-    install(DIRECTORY ${OpenBLAS_DIR}/lib
-            DESTINATION ${CMAKE_SOURCE_DIR}/release)
-    install(DIRECTORY ${OpenBLAS_DIR}/include
-            DESTINATION ${CMAKE_SOURCE_DIR}/release)
-    install(DIRECTORY ${OpenBLAS_DIR}/bin
-            DESTINATION ${CMAKE_SOURCE_DIR}/release)
-  elseif(WHISPERCPP_WITH_HIPBLAS)
+  if(WHISPERCPP_WITH_HIPBLAS)
     message(STATUS "Setup HIP DLLs installation")
     set(HIPBLAS_DLLS
         "${HIP_PATH_STR}/bin/hipblas.dll" "${HIP_PATH_STR}/bin/rocblas.dll"
         "${HIP_PATH_STR}/bin/amdhip64_6.dll"
         "${HIP_PATH_STR}/bin/amd_comgr_2.dll")
     install(FILES ${HIPBLAS_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
-  else()
+  elif(WHISPERCPP_WITH_VULKAN)
+    message(STATUS "Vulkan does not require DLLs copy")
+  elif(WHISPERCPP_WITH_CUDA)
     # Check that CUDA_TOOLKIT_ROOT_DIR is set
     if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
       message(
@@ -196,6 +205,14 @@ if(WIN32)
     # copy the DLLs to the OBS plugin directory
     install(FILES ${CUBLAS_DLLS} ${CUBLASLT_DLLS} ${CUDART_DLLS}
             DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
+  else()
+    # add openblas to the link line
+    install(DIRECTORY ${OpenBLAS_DIR}/lib
+            DESTINATION ${CMAKE_SOURCE_DIR}/release)
+    install(DIRECTORY ${OpenBLAS_DIR}/include
+            DESTINATION ${CMAKE_SOURCE_DIR}/release)
+    install(DIRECTORY ${OpenBLAS_DIR}/bin
+            DESTINATION ${CMAKE_SOURCE_DIR}/release)
   endif()
 else()
   # copy lib/ include/ and bin/ from ${INSTALL_DIR} to the release directory in
