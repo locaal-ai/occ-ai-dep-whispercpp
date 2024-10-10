@@ -172,9 +172,9 @@ if(WIN32)
         "${HIP_PATH_STR}/bin/amdhip64_6.dll"
         "${HIP_PATH_STR}/bin/amd_comgr_2.dll")
     install(FILES ${HIPBLAS_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
-  elif(WHISPERCPP_WITH_VULKAN)
+  elseif(WHISPERCPP_WITH_VULKAN)
     message(STATUS "Vulkan does not require DLLs copy")
-  elif(WHISPERCPP_WITH_CUDA)
+  elseif(WHISPERCPP_WITH_CUDA)
     # Check that CUDA_TOOLKIT_ROOT_DIR is set
     if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
       message(
@@ -206,6 +206,7 @@ if(WIN32)
     install(FILES ${CUBLAS_DLLS} ${CUBLASLT_DLLS} ${CUDART_DLLS}
             DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
   else()
+    message(STATUS "Install OpenBLAS DLLs")
     # add openblas to the link line
     install(DIRECTORY ${OpenBLAS_DIR}/lib
             DESTINATION ${CMAKE_SOURCE_DIR}/release)
