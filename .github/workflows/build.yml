@@ -89,7 +89,7 @@ jobs:
           sudo apt install vulkan-sdk
 
       - name: "Run build-linux.sh"
-        run: "./build-linux.sh ${{ matrix.config }} ${{ steps.get-version.outputs.version }}"
+        run: "chmod +x build-linux.sh && ./build-linux.sh ${{ matrix.config }} ${{ steps.get-version.outputs.version }}"
         env:
           BUILD_WITH_ACCEL: ${{ matrix.accel }}
           LINUX_ARCH: "x86_64"
@@ -165,7 +165,7 @@ jobs:
           write-host "Downloading Vulkan SDK"
           Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" -OutFile "${env:RUNNER_TEMP}\VulkanSDK-1.3.296.0-Installer.exe"
           write-host "Installing Vulkan SDK"
-          Start-Process "${env:RUNNER_TEMP}\VulkanSDK-1.3.296.0-Installer.exe" -ArgumentList '--al install' -NoNewWindow -Wait
+          Start-Process "${env:RUNNER_TEMP}\VulkanSDK-1.3.296.0-Installer.exe" -ArgumentList '--accept-licenses --default-answer --confirm-command install' -NoNewWindow -Wait
           write-host "Completed Vulkan SDK installation"
 
       - name: "Run Build-Windows.ps1"
