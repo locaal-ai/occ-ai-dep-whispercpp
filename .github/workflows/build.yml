@@ -53,13 +53,13 @@ jobs:
           path: "*.tar.gz"
 
   BuildLinux:
-    if: false
     runs-on: "ubuntu-22.04"
 
     strategy:
       matrix:
         config:
           - "Release"
+        accel: [cpu, vulkan]
 
     defaults:
       run:
@@ -78,12 +78,25 @@ jobs:
       - name: "Checkout"
         uses: "actions/checkout@v4"
 
+      - name: "Install Vulkan SDK"
+        if: ${{ matrix.accel == 'vulkan' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list http://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
+          sudo apt update
+          sudo apt install vulkan-sdk
+
       - name: "Run build-linux.sh"
-        run: "./build-linux.sh ${{ matrix.config }} ${{ steps.get-version.outputs.version }}"
+        run: "chmod +x build-linux.sh && ./build-linux.sh ${{ matrix.config }} ${{ steps.get-version.outputs.version }}"
+        env:
+          BUILD_WITH_ACCEL: ${{ matrix.accel }}
+          LINUX_ARCH: "x86_64"
 
       - uses: "actions/upload-artifact@v4"
         with:
-          name: "whispercpp-linux-${{ matrix.config }}"
+          name: "whispercpp-linux-${{ matrix.config }}-${{ matrix.accel }}"
           path: "*.tar.gz"
 
   BuildWindows:
@@ -93,7 +106,7 @@ jobs:
       matrix:
         config:
           - "Release"
-        accel: [cpu, cuda, hipblas]
+        accel: [cpu, cuda, vulkan, hipblas]
 
     steps:
       - name: "Get version"
@@ -145,6 +158,16 @@ jobs:
         run: |
           "HIP_PATH=$(Resolve-Path 'C:\Program Files\AMD\ROCm\*\bin\clang.exe' | split-path | split-path)" >> $env:GITHUB_ENV
 
+      - name: "Install Vulkan SDK"
+        if: ${{ matrix.accel == 'vulkan' }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          write-host "Downloading Vulkan SDK"
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" -OutFile "${env:RUNNER_TEMP}\VulkanSDK-1.3.296.0-Installer.exe"
+          write-host "Installing Vulkan SDK"
+          Start-Process "${env:RUNNER_TEMP}\VulkanSDK-1.3.296.0-Installer.exe" -ArgumentList '--accept-licenses --default-answer --confirm-command install' -NoNewWindow -Wait
+          write-host "Completed Vulkan SDK installation"
+
       - name: "Run Build-Windows.ps1"
         run: "./Build-Windows.ps1 -Version ${{ steps.get-version.outputs.version }}"
         env:
@@ -157,12 +180,11 @@ jobs:
 
   Release:
     runs-on: "ubuntu-22.04"
-
-    if: "github.event_name == 'push' && contains(github.ref, 'refs/tags/')"
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
 
     needs:
       - "BuildMac"
-      # - "BuildLinux"
+      - "BuildLinux"
       - "BuildWindows"
 
     permissions:
