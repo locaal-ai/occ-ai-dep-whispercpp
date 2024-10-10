@@ -21,4 +21,4 @@ cmake --build build --config Release
 cmake --install build
 
 # compress the release folder
-tar -czvf whispercpp-linux-$LINUX_ARCH-$version.tar.gz release
+tar -czvf whispercpp-linux-$LINUX_ARCH-$BUILD_WITH_ACCEL-$version.tar.gz release
