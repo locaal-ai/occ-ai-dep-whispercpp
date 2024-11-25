@@ -7,10 +7,12 @@ include(FetchContent)
 
 option(WHISPERCPP_WITH_CUDA "Build Whisper with CUDA support" OFF)
 option(WHISPERCPP_WITH_HIPBLAS "Build Whisper with hipBLAS support" OFF)
+option(WHISPERCPP_WITH_VULKAN "Build Whisper with Vulkan support" OFF)
+option(WHISPERCPP_WITH_MKL "Build Whisper with MKL support" OFF)
 
 set(CMAKE_OSX_ARCHITECTURES_ "$ENV{MACOS_ARCH}")
 
-set(Whispercpp_Build_GIT_TAG "fdbfb460ed546452a5d53611bba66d10d842e719")
+set(Whispercpp_Build_GIT_TAG "8c6a9b8bb6a0273cc0b5915903ca1ff9206c6285")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL Release OR ${CMAKE_BUILD_TYPE} STREQUAL
                                            RelWithDebInfo)
@@ -74,6 +76,31 @@ if(WIN32)
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DGGML_HIPBLAS=ON
         -DGGML_CUDA=OFF)
+    set(WHISPER_CMAKE_GENERATOR ${CMAKE_GENERATOR})
+  elseif(WHISPERCPP_WITH_MKL)
+    # Build with MKL
+    if(NOT DEFINED ENV{MKL_PATH})
+      message(
+        FATAL_ERROR
+          "MKL_PATH is not set. Please set it to the root directory of your MKL installation, e.g. `C:/Program Files (x86)/Intel/oneAPI/mkl/latest`"
+      )
+    endif(NOT DEFINED ENV{MKL_PATH})
+    cmake_path(SET MKL_PATH_STR NORMALIZE "$ENV{MKL_PATH}")
+    set(WHISPER_ADDITIONAL_ENV "CMAKE_PREFIX_PATH=${MKL_PATH_STR}/lib/cmake/mkl WHISPER_MKL=1")
+    set(MKL_BLAS_LIBRARIES
+        "${MKL_PATH_STR}/lib/mkl_intel_lp64.lib;${MKL_PATH_STR}/lib/mkl_sequential.lib;${MKL_PATH_STR}/lib/mkl_core.lib"
+        # ${MKL_PATH_STR}/lib/mkl_blas95_lp64.lib
+        # ${MKL_PATH_STR}/lib/mkl_blacs_intelmpi_lp64.lib
+        # ${MKL_PATH_STR}/lib/mkl_lapack95_lp64.lib
+        # ${MKL_PATH_STR}/lib/mkl_scalapack95_lp64.lib
+    )
+    cmake_path(SET MKL_PATH_INCLUDE_STR NORMALIZE "${MKL_PATH_STR}/include")
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        -DGGML_BLAS_VENDOR=Intel -DGGML_BLAS=ON -DGGML_CUDA=OFF
+        "-DBLAS_LIBRARIES=${MKL_BLAS_LIBRARIES}"
+        -DBLAS_INCLUDE_DIRS=${MKL_PATH_INCLUDE_STR})
     set(WHISPER_CMAKE_GENERATOR ${CMAKE_GENERATOR})
   else()
     # Build with OpenBLAS
@@ -174,6 +201,8 @@ if(WIN32)
     install(FILES ${HIPBLAS_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
   elseif(WHISPERCPP_WITH_VULKAN)
     message(STATUS "Vulkan does not require DLLs copy")
+  elseif(WHISPERCPP_WITH_MKL)
+    message(STATUS "MKL does not require DLLs copy")
   elseif(WHISPERCPP_WITH_CUDA)
     # Check that CUDA_TOOLKIT_ROOT_DIR is set
     if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
