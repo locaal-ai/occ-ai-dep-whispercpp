@@ -54,12 +54,12 @@ if ($env:BUILD_WITH_ACCEL -eq "cpu") {
     )
     $zipFileName = "whispercpp-windows-mkl-$Version.zip"
     # find the MKL path in C:\Program Files (x86)\Intel\oneAPI
-    $mklPath = Get-ChildItem -Path "C:\Program Files (x86)\Intel\oneAPI" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $mklPath = Get-ChildItem -Path "C:\Program Files (x86)\Intel\oneAPI\mkl" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     $env:MKL_PATH="$mklPath"
 } elseif ($env:BUILD_WITH_ACCEL -eq "cuda") {
     $zipFileName = "whispercpp-windows-cuda-$Version.zip"
     # find the CUDA path in C:\Program Files\NVIDIA GPU Computing Toolkit
-    $cudaPath = Get-ChildItem -Path "C:\Program Files\NVIDIA GPU Computing Toolkit" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $cudaPath = Get-ChildItem -Path "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     $env:CUDA_TOOLKIT_ROOT_DIR="$cudaPath"
     $cmakeArgs += (
         "-DWHISPERCPP_WITH_CUDA=ON",

@@ -86,11 +86,21 @@ if(WIN32)
       )
     endif(NOT DEFINED ENV{MKL_PATH})
     cmake_path(SET MKL_PATH_STR NORMALIZE "$ENV{MKL_PATH}")
-    set(WHISPER_ADDITIONAL_ENV "CMAKE_PREFIX_PATH=${MKL_PATH_STR} WHISPER_MKL=1")
+    set(WHISPER_ADDITIONAL_ENV "CMAKE_PREFIX_PATH=${MKL_PATH_STR}/lib/cmake/mkl WHISPER_MKL=1")
+    set(MKL_BLAS_LIBRARIES
+        "${MKL_PATH_STR}/lib/mkl_intel_lp64.lib;${MKL_PATH_STR}/lib/mkl_sequential.lib;${MKL_PATH_STR}/lib/mkl_core.lib"
+        # ${MKL_PATH_STR}/lib/mkl_blas95_lp64.lib
+        # ${MKL_PATH_STR}/lib/mkl_blacs_intelmpi_lp64.lib
+        # ${MKL_PATH_STR}/lib/mkl_lapack95_lp64.lib
+        # ${MKL_PATH_STR}/lib/mkl_scalapack95_lp64.lib
+    )
+    cmake_path(SET MKL_PATH_INCLUDE_STR NORMALIZE "${MKL_PATH_STR}/include")
     set(WHISPER_ADDITIONAL_CMAKE_ARGS
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DWHISPER_MKL=ON
-        -DGGML_CUDA=OFF)
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        -DGGML_BLAS_VENDOR=Intel -DGGML_BLAS=ON -DGGML_CUDA=OFF
+        "-DBLAS_LIBRARIES=${MKL_BLAS_LIBRARIES}"
+        -DBLAS_INCLUDE_DIRS=${MKL_PATH_INCLUDE_STR})
     set(WHISPER_CMAKE_GENERATOR ${CMAKE_GENERATOR})
   else()
     # Build with OpenBLAS
@@ -191,6 +201,8 @@ if(WIN32)
     install(FILES ${HIPBLAS_DLLS} DESTINATION ${CMAKE_SOURCE_DIR}/release/bin)
   elseif(WHISPERCPP_WITH_VULKAN)
     message(STATUS "Vulkan does not require DLLs copy")
+  elseif(WHISPERCPP_WITH_MKL)
+    message(STATUS "MKL does not require DLLs copy")
   elseif(WHISPERCPP_WITH_CUDA)
     # Check that CUDA_TOOLKIT_ROOT_DIR is set
     if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
