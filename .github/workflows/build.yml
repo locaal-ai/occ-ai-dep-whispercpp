@@ -41,6 +41,12 @@ jobs:
       - name: "Checkout"
         uses: "actions/checkout@v4"
 
+      - uses: actions/cache@v4
+        id: ccache-cache
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
+
       - name: "Run build-macos.sh"
         run: "./build-macos.sh ${{ steps.get-version.outputs.version }}"
         env:
@@ -77,6 +83,12 @@ jobs:
 
       - name: "Checkout"
         uses: "actions/checkout@v4"
+
+      - uses: actions/cache@v4
+        id: ccache-cache
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
 
       - name: "Install Vulkan SDK"
         if: ${{ matrix.accel == 'vulkan' }}
@@ -121,6 +133,12 @@ jobs:
 
       - name: "Checkout"
         uses: "actions/checkout@v4"
+
+      - uses: actions/cache@v4
+        id: ccache-cache
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
 
       - name: Install CUDA Toolkit
         if: ${{ matrix.accel == 'cuda' }}
