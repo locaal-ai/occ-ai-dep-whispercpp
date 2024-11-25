@@ -3,8 +3,8 @@ Param(
 )
 
 # check env var BUILD_WITH_ACCEL
-if ($env:BUILD_WITH_ACCEL -eq $null) {
-    Write-Host "Please set env var BUILD_WITH_ACCEL to 'cpu', 'cuda', 'vulkan' or 'hipblas'."
+if ($null -eq $env:BUILD_WITH_ACCEL) {
+    Write-Host "Please set env var BUILD_WITH_ACCEL to 'cpu', 'cuda', 'vulkan', `mkl` or 'hipblas'."
     exit
 }
 
@@ -32,6 +32,24 @@ if ($env:BUILD_WITH_ACCEL -eq "cpu") {
     # find the Vulkan SDK version path in C:\VulkanSDK\
     $vulkanSdkPath = Get-ChildItem -Path "C:\VulkanSDK" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     $env:VULKAN_SDK_PATH="$vulkanSdkPath"
+} elseif ($env:BUILD_WITH_ACCEL -eq "mkl") {
+    $cmakeArgs += (
+        "-DWHISPERCPP_WITH_MKL=ON",
+        "-DCMAKE_GENERATOR=Visual Studio 17 2022"
+    )
+    $zipFileName = "whispercpp-windows-mkl-$Version.zip"
+    # find the MKL path in C:\Program Files (x86)\Intel\oneAPI
+    $mklPath = Get-ChildItem -Path "C:\Program Files (x86)\Intel\oneAPI" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $env:MKL_PATH="$mklPath"
+} elseif ($env:BUILD_WITH_ACCEL -eq "cuda") {
+    $cmakeArgs += (
+        "-DWHISPERCPP_WITH_CUDA=ON",
+        "-DCMAKE_GENERATOR=Visual Studio 17 2022"
+    )
+    $zipFileName = "whispercpp-windows-cuda-$Version.zip"
+    # find the CUDA path in C:\Program Files\NVIDIA GPU Computing Toolkit
+    $cudaPath = Get-ChildItem -Path "C:\Program Files\NVIDIA GPU Computing Toolkit" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $env:CUDA_TOOLKIT_ROOT_DIR="$cudaPath"
 } else {
     $cmakeArgs += (
         "-DWHISPERCPP_WITH_CUDA=ON",

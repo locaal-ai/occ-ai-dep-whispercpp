@@ -106,7 +106,7 @@ jobs:
       matrix:
         config:
           - "Release"
-        accel: [cpu, cuda, vulkan, hipblas]
+        accel: [cpu, cuda, vulkan, hipblas, mkl]
 
     steps:
       - name: "Get version"
@@ -167,6 +167,16 @@ jobs:
           write-host "Installing Vulkan SDK"
           Start-Process "${env:RUNNER_TEMP}\VulkanSDK-1.3.296.0-Installer.exe" -ArgumentList '--accept-licenses --default-answer --confirm-command install' -NoNewWindow -Wait
           write-host "Completed Vulkan SDK installation"
+
+      - name: "Install Intel MKL"
+        if: ${{ matrix.accel == 'mkl' }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          write-host "Downloading Intel MKL"
+          Invoke-WebRequest -Uri "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/bcb40b43-4ca9-4725-9749-4f9fc1e9b97f/intel-onemkl-2025.0.1.15_offline.exe" -OutFile "${env:RUNNER_TEMP}\mkl.exe"
+          write-host "Installing Intel MKL"
+          Start-Process "${env:RUNNER_TEMP}\mkl.exe" -ArgumentList '/S' -NoNewWindow -Wait
+          write-host "Completed Intel MKL installation"
 
       - name: "Run Build-Windows.ps1"
         run: "./Build-Windows.ps1 -Version ${{ steps.get-version.outputs.version }}"

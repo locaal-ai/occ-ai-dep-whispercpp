@@ -7,10 +7,12 @@ include(FetchContent)
 
 option(WHISPERCPP_WITH_CUDA "Build Whisper with CUDA support" OFF)
 option(WHISPERCPP_WITH_HIPBLAS "Build Whisper with hipBLAS support" OFF)
+option(WHISPERCPP_WITH_VULKAN "Build Whisper with Vulkan support" OFF)
+option(WHISPERCPP_WITH_MKL "Build Whisper with MKL support" OFF)
 
 set(CMAKE_OSX_ARCHITECTURES_ "$ENV{MACOS_ARCH}")
 
-set(Whispercpp_Build_GIT_TAG "fdbfb460ed546452a5d53611bba66d10d842e719")
+set(Whispercpp_Build_GIT_TAG "8c6a9b8bb6a0273cc0b5915903ca1ff9206c6285")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL Release OR ${CMAKE_BUILD_TYPE} STREQUAL
                                            RelWithDebInfo)
@@ -73,6 +75,21 @@ if(WIN32)
     set(WHISPER_ADDITIONAL_CMAKE_ARGS
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DGGML_HIPBLAS=ON
+        -DGGML_CUDA=OFF)
+    set(WHISPER_CMAKE_GENERATOR ${CMAKE_GENERATOR})
+  elseif(WHISPERCPP_WITH_MKL)
+    # Build with MKL
+    if(NOT DEFINED ENV{MKL_PATH})
+      message(
+        FATAL_ERROR
+          "MKL_PATH is not set. Please set it to the root directory of your MKL installation, e.g. `C:/Program Files (x86)/Intel/oneAPI/mkl/latest`"
+      )
+    endif(NOT DEFINED ENV{MKL_PATH})
+    cmake_path(SET MKL_PATH_STR NORMALIZE "$ENV{MKL_PATH}")
+    set(WHISPER_ADDITIONAL_ENV "CMAKE_PREFIX_PATH=${MKL_PATH_STR} WHISPER_MKL=1")
+    set(WHISPER_ADDITIONAL_CMAKE_ARGS
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DWHISPER_MKL=ON
         -DGGML_CUDA=OFF)
     set(WHISPER_CMAKE_GENERATOR ${CMAKE_GENERATOR})
   else()
