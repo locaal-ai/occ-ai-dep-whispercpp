@@ -38,6 +38,11 @@ jobs:
           printf "version=%s" "$version" > "$GITHUB_OUTPUT"
         id: "get-version"
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-MacOS-${{ matrix.architecture }}
+
       - name: "Checkout"
         uses: "actions/checkout@v4"
 
