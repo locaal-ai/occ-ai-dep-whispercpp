@@ -72,13 +72,13 @@ $cudaVersions = @{
 }
 
 if ($cudaVersions.ContainsKey($CUDA_VERSION_FULL)) {
-    $cudaInstallerUrl = $cudaVersions[$cudaVersion]
-    Write-Output "CUDA version $cudaVersion found. Downloading from $cudaInstallerUrl"
+    $cudaInstallerUrl = $cudaVersions[$CUDA_VERSION_FULL]
+    Write-Output "CUDA version $CUDA_VERSION_FULL found. Downloading from $cudaInstallerUrl"
     # Add your download and installation logic here
     $downloadUrl = $cudaInstallerUrl
 }
 else {
-    Write-Output "CUDA version $cudaVersion not found."
+    Write-Output "CUDA version $CUDA_VERSION_FULL not found."
     exit 1
 }
 
