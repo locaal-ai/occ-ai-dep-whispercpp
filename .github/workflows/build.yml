@@ -127,14 +127,21 @@ jobs:
       - name: "Checkout"
         uses: "actions/checkout@v4"
 
-      - name: Install CUDA Toolkit
+      # - name: Install CUDA Toolkit
+      #   if: ${{ matrix.accel == 'cuda' }}
+      #   id: cuda-toolkit
+      #   uses: Jimver/cuda-toolkit@v0.2.21
+      #   with:
+      #     cuda: '12.5.1'
+      #     sub-packages: '["cudart", "nvcc", "cublas", "cublas_dev", "visual_studio_integration"]'
+      #     method: 'network'
+      - name: Setup CUDA Toolkit
         if: ${{ matrix.accel == 'cuda' }}
         id: cuda-toolkit
-        uses: Jimver/cuda-toolkit@v0.2.21
-        with:
-          cuda: '12.5.1'
-          sub-packages: '["cudart", "nvcc", "cublas", "cublas_dev", "visual_studio_integration"]'
-          method: 'network'
+        shell: pwsh
+        run: ./setup_cuda.ps1
+        env:
+            INPUT_CUDA_VERSION: '12.5.1'
 
       - name: Set CUDA_TOOLKIT_ROOT_DIR if CUDA is installed
         if: ${{ matrix.accel == 'cuda' }}
